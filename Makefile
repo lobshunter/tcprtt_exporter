@@ -6,9 +6,17 @@ GOENV   := GO111MODULE=on CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH)
 GO      := $(GOENV) go
 DOCKER := DOCKER_BUILDKIT=1 docker
 
-LDFLAGS := -w -s
+REPO := github.com/lobshunter/tcprtt_exporter
 
-COMMIT := $(shell git describe --dirty --always)
+COMMIT    := $(shell git describe --no-match --always --dirty)
+BRANCH    := $(shell git rev-parse --abbrev-ref HEAD)
+BUILD_DATE := $(shell date -Iseconds)
+
+LDFLAGS := -w -s
+LDFLAGS += -X "$(REPO)/pkg/version.gitHash=$(COMMIT)"
+LDFLAGS += -X "$(REPO)/pkg/version.gitBranch=$(BRANCH)"
+LDFLAGS += -X "$(REPO)/pkg/version.buildDate=$(BUILD_DATE)"
+
 IMAGE ?= lobshunter/tcprtt_exporter
 IMAGE_TAG ?= $(COMMIT)
 
