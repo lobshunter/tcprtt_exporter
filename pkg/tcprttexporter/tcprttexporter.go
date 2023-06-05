@@ -32,6 +32,8 @@ type TCPRttCollector struct {
 
 	tcprtt    *prometheus.Desc
 	tcprttVar *prometheus.Desc
+
+	ipResolver IPResolver
 }
 
 func NewTCPRttCollector() *TCPRttCollector {
@@ -51,6 +53,11 @@ func NewTCPRttCollector() *TCPRttCollector {
 			nil,
 		),
 	}
+}
+
+func (t *TCPRttCollector) WithIPResolver(resolver IPResolver) *TCPRttCollector {
+	t.ipResolver = resolver
+	return t
 }
 
 func (t *TCPRttCollector) Describe(chan<- *prometheus.Desc) {}
@@ -80,6 +87,11 @@ func (t *TCPRttCollector) Collect(ch chan<- prometheus.Metric) {
 		if err != nil {
 			log.Printf("[ERROR] convert rttVar to int failed: %v", err)
 			continue
+		}
+
+		if t.ipResolver != nil {
+			src = t.ipResolver.Resolve(src)
+			dst = t.ipResolver.Resolve(dst)
 		}
 
 		ch <- prometheus.MustNewConstMetric(t.tcprtt, prometheus.GaugeValue, float64(rtt), src, dst, t.hostname)

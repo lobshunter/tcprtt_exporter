@@ -16,11 +16,23 @@ import (
 )
 
 var (
-	listenAddress = flag.String("listen", ":8090", "address to bind http server to")
+	listenAddress     = flag.String("listen", ":8090", "address to bind http server to")
+	resolveKubernetes = flag.Bool("resolve-kubernetes", false, "try resolving ip address to kubernetes service/pod name")
+	kubeconfig        = flag.String("kubeconfig", "", "absolute path to the kubeconfig file, only required if out-of-cluster and resolve-kubernetes is true")
 )
 
 func main() {
+	flag.Parse()
+
 	collector := tcprttexporter.NewTCPRttCollector()
+	if *resolveKubernetes {
+		ipResolver, err := tcprttexporter.NewKubernetesIPResolver(*kubeconfig)
+		if err != nil {
+			log.Fatalf("[FATAL] create kubernetes ip resolver failed: %v", err)
+		}
+		collector.WithIPResolver(ipResolver)
+	}
+
 	r := prometheus.NewRegistry()
 	err := r.Register(collector)
 	if err != nil {
